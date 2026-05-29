@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>生活習慣とニキビ数の相関</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <h1>生活習慣とニキビ数の相関</h1>
+
+  <h3>スキンケア別の平均ニキビ数</h3>
+  <canvas id="careChart"></canvas>
+
+  <h3>睡眠時間別の平均ニキビ数</h3>
+  <canvas id="sleepChart"></canvas>
+
+  <h3>食生活別の平均ニキビ数</h3>
+  <canvas id="dietChart"></canvas>
+
+  <script>
+    // Flask → JavaScript データ受け渡しは JSON.parse + tojson + safe で行う
+    const skincareData = JSON.parse('{{ skincare_data | tojson | safe }}');
+    const sleepData = JSON.parse('{{ sleep_data | tojson | safe }}');
+    const dietData = JSON.parse('{{ diet_data | tojson | safe }}');
+
+    // グラフ描画関数
+    function drawChart(canvasId, chartData) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: chartData.map(item => item[0]),
+          datasets: [{
+            label: '平均ニキビ数',
+            data: chartData.map(item => item[1]),
+            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            title: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: '平均ニキビ数' }
+            },
+            x: {
+              title: { display: true, text: 'カテゴリー' }
+            }
+          }
+        }
+      });
+    }
+
+    // 各グラフを描画
+    drawChart('careChart', skincareData);
+    drawChart('sleepChart', sleepData);
+    drawChart('dietChart', dietData);
+  </script>
+</body>
+</html>

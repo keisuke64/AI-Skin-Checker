@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}写真アップロードと生活習慣記録{% endblock %}
+{% block content %}
+<h2>ニキビ写真のアップロードと生活習慣の記録</h2>
+
+{% if message %}
+    <p style="color:green;">{{ message }}</p>
+{% endif %}
+
+<form method="POST" action="{{ url_for('predict') }}" enctype="multipart/form-data">
+  <label for="file">ニキビ写真を選択:</label><br>
+  <input type="file" name="file" accept="image/*" required><br><br>
+
+  <h3>今日の生活習慣</h3>
+
+  <label for="skincare">スキンケア:</label><br>
+  <select name="skincare" required>
+    <option value="">選択してください</option>
+    <option value="念入り">念入り</option>
+    <option value="普通">普通</option>
+    <option value="簡単">簡単</option>
+    <option value="なし">なし</option>
+  </select><br><br>
+
+  <label for="sleep">睡眠時間:</label><br>
+  <select name="sleep" required>
+    <option value="">選択してください</option>
+    <option value="8時間以上">8時間以上</option>
+    <option value="6-8時間">6-8時間</option>
+    <option value="6時間未満">6時間未満</option>
+  </select><br><br>
+
+  <label for="diet">食生活:</label><br>
+  <select name="diet" required>
+    <option value="">選択してください</option>
+    <option value="野菜中心">野菜中心</option>
+    <option value="バランス良">バランス良</option>
+    <option value="脂質多め">脂質多め</option>
+  </select><br><br>
+
+  <button type="submit">解析して記録</button>
+</form>
+
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}記録グラフ{% endblock %}
+{% block content %}
+<h2>日ごとのニキビ数推移</h2>
+
+<canvas id="acneChart" width="400" height="200"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('acneChart').getContext('2d');
+  const dates = ('{{ dates | tojson | safe }}');
+  const counts = ('{{ counts | tojson | safe }}');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [{
+        label: 'ニキビ数',
+        data: counts,
+        fill: false,
+        borderColor: 'blue',
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: '数' }
+        },
+        x: {
+          title: { display: true, text: '日付' }
+        }
+      }
+    }
+  });
+</script>
+
+{% if not dates %}
+  <p>まだデータがありません。写真をアップロードして解析を行ってください。</p>
+{% endif %}
+
+{% endblock %}

@@ -16,8 +16,7 @@ app = Flask(__name__)
 gemini_client = genai.Client()
 
 # --- DB初期化をグローバルスコープ（または app.py の読み込み時）で実行 ---
-with app.app_context():
-    init_db()
+
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
@@ -80,6 +79,7 @@ def init_db():
         );
         ''')
         db.commit()
+init_db()
 
 def generate_skincare_advice(acne_count, skincare, sleep, diet):
     """

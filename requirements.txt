@@ -2,4 +2,3 @@ Flask
 Werkzeug
 roboflow
 inference-sdk
-python-3.12.10

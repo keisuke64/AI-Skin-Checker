@@ -13,7 +13,12 @@ import time, re
 load_dotenv()
 
 app = Flask(__name__)
-gemini_client = genai.Client()
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+gemini_client = genai.Client(
+    api_key=GEMINI_API_KEY
+)
 
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "fallback-secret-key-for-dev")
 ROBOFLOW_API_KEY = os.environ.get("ROBOFLOW_API_KEY", "")

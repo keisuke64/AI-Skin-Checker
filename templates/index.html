@@ -1,18 +1,65 @@
-{% extends "base.html" %}  {% block title %}生活習慣とニキビ数の相関{% endblock %}
+{% extends "base.html" %}
+{% block title %}ホーム - 肌トラブルケア{% endblock %}
+
 {% block content %}
-<h1>生活習慣とニキビ数の相関</h1>
+<div class="container my-4" style="max-width: 800px;">
 
-<h3>スキンケア別の平均ニキビ数</h3>
-<canvas id="careChart"></canvas>
+  <!-- ✨ 今日の肌環境＆ケアアドバイスカード -->
+  <div class="card shadow-sm mb-4 border-0 bg-light">
+    <div class="card-body p-4">
+      <h4 class="card-title fw-bold mb-3">☀️ 今日の肌環境とおすすめケア</h4>
+      
+      <!-- ロード中表示 -->
+      <div id="weather-loading" class="text-muted">
+        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+        現在地の気象データ（紫外線・湿度）を取得中...
+      </div>
 
-<h3>睡眠時間別の平均ニキビ数</h3>
-<canvas id="sleepChart"></canvas>
+      <!-- 天気情報表示エリア（初期状態は非表示） -->
+      <div id="weather-content" style="display: none;">
+        <div class="row align-items-center mb-3">
+          <div class="col-6 col-md-3 text-center border-end">
+            <span class="text-muted d-block small">UV指数</span>
+            <span id="uv-index" class="fs-2 fw-bold text-danger">-</span>
+          </div>
+          <div class="col-6 col-md-3 text-center border-end-md">
+            <span class="text-muted d-block small">現在の湿度</span>
+            <span id="humidity" class="fs-2 fw-bold text-primary">-%</span>
+          </div>
+          <div class="col-12 col-md-6 mt-3 mt-md-0">
+            <span class="text-muted d-block small">気温 / 天気</span>
+            <span id="weather-info" class="fs-5 fw-bold text-dark">-</span>
+          </div>
+        </div>
 
-<h3>食生活別の平均ニキビ数</h3>
-<canvas id="dietChart"></canvas>
+        <!-- 💡 状況に応じた動的アドバイス表示エリア -->
+        <div id="care-advices" class="d-flex flex-column gap-2 mt-3">
+          <!-- JSでここにアラートバッジが挿入されます -->
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <!-- 既存のコンテンツ（相関分析グラフやメニュー等） -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>生活習慣とニキビ数の相関分析</h2>
+    <a href="{{ url_for('upload') }}" class="btn btn-danger">今日のお肌を記録する</a>
+  </div>
+
+  <h3>スキンケア別の平均ニキビ数</h3>
+  <canvas id="careChart" class="mb-4"></canvas>
+
+  <h3>睡眠時間別の平均ニキビ数</h3>
+  <canvas id="sleepChart" class="mb-4"></canvas>
+
+  <h3>食生活別の平均ニキビ数</h3>
+  <canvas id="dietChart" class="mb-4"></canvas>
+</div>
+
+<!-- Chart.js 既存処理 -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+  // (既存のグラフ描画スクリプトはそのまま保持)
   const skincareData = JSON.parse('{{ skincare_data | tojson | safe }}');
   const sleepData = JSON.parse('{{ sleep_data | tojson | safe }}');
   const dietData = JSON.parse('{{ diet_data | tojson | safe }}');
@@ -45,5 +92,97 @@
   drawChart('careChart', skincareData);
   drawChart('sleepChart', sleepData);
   drawChart('dietChart', dietData);
+</script>
+
+<!-- ☀️ 天気＆UVデータ取得スクリプト -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  if ("geolocation" in navigator) {
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        fetchWeatherData(lat, lon);
+      },
+      error => {
+        // 位置情報が拒否された場合は東京の座標でフォールバック
+        console.warn("位置情報の取得が許可されなかったためデフォルト位置を使用します。");
+        fetchWeatherData(35.6895, 139.6917);
+      }
+    );
+  } else {
+    fetchWeatherData(35.6895, 139.6917);
+  }
+});
+
+function fetchWeatherData(lat, lon) {
+  // Open-Meteo API (APIキー不要)
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m&daily=uv_index_max&timezone=auto`;
+
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      const humidity = data.current.relative_humidity_2m;
+      const temp = data.current.temperature_2m;
+      const uvMax = data.daily.uv_index_max[0];
+
+      // UIに数値を反映
+      document.getElementById('uv-index').innerText = uvMax.toFixed(1);
+      document.getElementById('humidity').innerText = `${humidity}%`;
+      document.getElementById('weather-info').innerText = `${temp}°C`;
+
+      // ロード画面の切り替え
+      document.getElementById('weather-loading').style.display = 'none';
+      document.getElementById('weather-content').style.display = 'block';
+
+      // UV・湿度に応じたアドバイス文の自動挿入
+      renderCareAdvices(uvMax, humidity);
+    })
+    .catch(err => {
+      console.error("天気データの取得エラー:", err);
+      document.getElementById('weather-loading').innerText = "気象データの取得に失敗しました。";
+    });
+}
+
+function renderCareAdvices(uv, humidity) {
+  const container = document.getElementById('care-advices');
+  container.innerHTML = '';
+
+  // 1. 紫外線（UV）に関する判定と呼びかけ
+  if (uv >= 6.0) {
+    container.innerHTML += `
+      <div class="alert alert-danger m-0 py-2 d-flex align-items-center">
+        <span class="fs-5 me-2">☂️</span>
+        <div><strong>紫外線が強烈です！</strong> 日焼け止めの塗り直しや日傘・帽子の使用を徹底しましょう。</div>
+      </div>`;
+  } else if (uv >= 3.0) {
+    container.innerHTML += `
+      <div class="alert alert-warning m-0 py-2 d-flex align-items-center">
+        <span class="fs-5 me-2">🧴</span>
+        <div><strong>紫外線がやや強めです。</strong> 外出時は日焼け止めを塗って肌を守りましょう。</div>
+      </div>`;
+  } else {
+    container.innerHTML += `
+      <div class="alert alert-success m-0 py-2 d-flex align-items-center">
+        <span class="fs-5 me-2">🌿</span>
+        <div><strong>紫外線レベルは穏やかです。</strong> 基本のスキンケアでお出かけいただけます。</div>
+      </div>`;
+  }
+
+  // 2. 湿度に関する判定と呼びかけ（乾燥・べたつき対策）
+  if (humidity < 40) {
+    container.innerHTML += `
+      <div class="alert alert-info m-0 py-2 d-flex align-items-center">
+        <span class="fs-5 me-2">💧</span>
+        <div><strong>空気の乾燥に注意！</strong> 肌の水分が失われやすいため、高保湿なローションや乳液でのケアがおすすめです。</div>
+      </div>`;
+  } else if (humidity > 75) {
+    container.innerHTML += `
+      <div class="alert alert-secondary m-0 py-2 d-flex align-items-center">
+        <span class="fs-5 me-2">🧼</span>
+        <div><strong>湿度が高く皮脂が出やすい状態です。</strong> 丁寧な洗顔とオイルフリーの軽い保湿を意識しましょう。</div>
+      </div>`;
+  }
+}
 </script>
 {% endblock %}

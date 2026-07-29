@@ -1,15 +1,45 @@
 {% extends "base.html" %}
-{% block title %}記録グラフ{% endblock %}
-{% block content %}
-<h2>日ごとのニキビ数推移</h2>
+{% block title %}記録・推移グラフ{% endblock %}
 
-<canvas id="acneChart" width="400" height="200"></canvas>
+{% block content %}
+<div class="container my-4">
+  <h2 class="mb-4">日ごとのニキビ数推移</h2>
+
+  <div class="card p-3 shadow-sm mb-5">
+    <canvas id="acneChart" height="100"></canvas>
+  </div>
+
+  <h3 class="mb-3">過去の記録一覧</h3>
+  {% if records %}
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+      {% for item in records %}
+        <div class="col">
+          <div class="card h-100 shadow-sm">
+            <img src="{{ url_for('static', filename=item.result_image_path.replace('static/', '')) if item.result_image_path else url_for('static', filename=item.image_path.replace('static/', '')) }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="結果画像">
+            <div class="card-body">
+              <h5 class="card-title d-flex justify-content-between align-items-center">
+                <span>{{ item.date }}</span>
+                <span class="badge bg-danger">{{ item.count }} 個</span>
+              </h5>
+              <p class="card-text text-muted small mb-1">スキンケア: {{ item.skincare }}</p>
+              <p class="card-text text-muted small mb-1">睡眠: {{ item.sleep }}</p>
+              <p class="card-text text-muted small mb-3">食生活: {{ item.diet }}</p>
+              <a href="{{ url_for('result_detail', record_id=item.id) }}" class="btn btn-sm btn-outline-danger w-100">詳細を見る</a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted">まだデータがありません。写真をアップロードして解析を行ってください。</p>
+  {% endif %}
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   const ctx = document.getElementById('acneChart').getContext('2d');
-  const dates = ('{{ dates | tojson | safe }}');
-  const counts = ('{{ counts | tojson | safe }}');
+  const dates = JSON.parse('{{ dates | tojson | safe }}');
+  const counts = JSON.parse('{{ counts | tojson | safe }}');
 
   new Chart(ctx, {
     type: 'line',
@@ -19,27 +49,18 @@
         label: 'ニキビ数',
         data: counts,
         fill: false,
-        borderColor: 'blue',
-        tension: 0.3
+        borderColor: '#dc3545',
+        backgroundColor: '#dc3545',
+        tension: 0.2
       }]
     },
     options: {
       responsive: true,
       scales: {
-        y: {
-          beginAtZero: true,
-          title: { display: true, text: '数' }
-        },
-        x: {
-          title: { display: true, text: '日付' }
-        }
+        y: { beginAtZero: true, title: { display: true, text: '個数' } },
+        x: { title: { display: true, text: '日付' } }
       }
     }
   });
 </script>
-
-{% if not dates %}
-  <p>まだデータがありません。写真をアップロードして解析を行ってください。</p>
-{% endif %}
-
 {% endblock %}

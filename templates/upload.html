@@ -1,44 +1,70 @@
 {% extends "base.html" %}
-{% block title %}写真アップロードと生活習慣記録{% endblock %}
+{% block title %}写真と生活習慣の記録{% endblock %}
+
 {% block content %}
-<h2>ニキビ写真のアップロードと生活習慣の記録</h2>
+<div class="container my-4" style="max-width: 600px;">
+  <h2 class="mb-4 text-center">写真と生活習慣の記録</h2>
 
-{% if message %}
-    <p style="color:green;">{{ message }}</p>
-{% endif %}
+  {% if error %}
+    <div class="alert alert-danger" role="alert">{{ error }}</div>
+  {% endif %}
 
-<form method="POST" action="{{ url_for('predict') }}" enctype="multipart/form-data">
-  <label for="file">ニキビ写真を選択:</label><br>
-  <input type="file" name="file" accept="image/*" required><br><br>
+  <form method="POST" action="{{ url_for('predict') }}" enctype="multipart/form-data" class="card p-4 shadow-sm">
+    <div class="mb-3">
+      <label for="file" class="form-label fw-bold">ニキビ写真を選択</label>
+      <input type="file" name="file" id="file" class="form-control" accept="image/*" required onchange="previewImage(event)">
+      <div class="mt-3 text-center">
+        <img id="imgPreview" src="#" alt="プレビュー" style="max-width: 100%; max-height: 200px; display: none; border-radius: 8px;">
+      </div>
+    </div>
 
-  <h3>今日の生活習慣</h3>
+    <hr>
+    <h5 class="mb-3 fw-bold">今日の生活習慣</h5>
 
-  <label for="skincare">スキンケア:</label><br>
-  <select name="skincare" required>
-    <option value="">選択してください</option>
-    <option value="念入り">念入り</option>
-    <option value="普通">普通</option>
-    <option value="簡単">簡単</option>
-    <option value="なし">なし</option>
-  </select><br><br>
+    <div class="mb-3">
+      <label for="skincare" class="form-label">スキンケア</label>
+      <select name="skincare" class="form-select" required>
+        <option value="">選択してください</option>
+        <option value="念入り">念入り</option>
+        <option value="普通">普通</option>
+        <option value="簡単">簡単</option>
+        <option value="なし">なし</option>
+      </select>
+    </div>
 
-  <label for="sleep">睡眠時間:</label><br>
-  <select name="sleep" required>
-    <option value="">選択してください</option>
-    <option value="8時間以上">8時間以上</option>
-    <option value="6-8時間">6-8時間</option>
-    <option value="6時間未満">6時間未満</option>
-  </select><br><br>
+    <div class="mb-3">
+      <label for="sleep" class="form-label">睡眠時間</label>
+      <select name="sleep" class="form-select" required>
+        <option value="">選択してください</option>
+        <option value="8時間以上">8時間以上</option>
+        <option value="6-8時間">6-8時間</option>
+        <option value="6時間未満">6時間未満</option>
+      </select>
+    </div>
 
-  <label for="diet">食生活:</label><br>
-  <select name="diet" required>
-    <option value="">選択してください</option>
-    <option value="野菜中心">野菜中心</option>
-    <option value="バランス良">バランス良</option>
-    <option value="脂質多め">脂質多め</option>
-  </select><br><br>
+    <div class="mb-3">
+      <label for="diet" class="form-label">食生活</label>
+      <select name="diet" class="form-select" required>
+        <option value="">選択してください</option>
+        <option value="野菜中心">野菜中心</option>
+        <option value="バランス良">バランス良</option>
+        <option value="脂質多め">脂質多め</option>
+      </select>
+    </div>
 
-  <button type="submit">解析して記録</button>
-</form>
+    <button type="submit" class="btn btn-danger w-100 mt-2">解析して記録する</button>
+  </form>
+</div>
 
+<script>
+  function previewImage(event) {
+    const reader = new FileReader();
+    reader.onload = function(){
+      const output = document.getElementById('imgPreview');
+      output.src = reader.result;
+      output.style.display = 'block';
+    };
+    reader.readAsDataURL(event.target[files][0]);
+  }
+</script>
 {% endblock %}

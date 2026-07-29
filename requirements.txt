@@ -1,4 +1,4 @@
 Flask
 Werkzeug
 roboflow
-gunicorn
+inference-sdk

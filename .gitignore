@@ -1,0 +1,13 @@
+# 秘密情報
+.env
+ 
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+ 
+# アプリのデータ・アップロード画像（個人情報を含むため）
+acne_records.db
+static/uploads/*
+!static/uploads/.gitkeep

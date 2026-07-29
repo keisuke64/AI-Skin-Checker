@@ -6,11 +6,11 @@ from werkzeug.utils import secure_filename
 from inference_sdk import InferenceHTTPClient
 from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
+
+load_dotenv()
 from google import genai
 from google.genai import types, errors
 import time, re
-
-load_dotenv()
 
 app = Flask(__name__)
 

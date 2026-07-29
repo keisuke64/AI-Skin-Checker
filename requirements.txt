@@ -2,3 +2,4 @@ Flask
 Werkzeug
 roboflow
 inference-sdk
+gunicorn

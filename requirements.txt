@@ -3,3 +3,4 @@ Werkzeug
 roboflow
 inference-sdk
 gunicorn
+google-genai

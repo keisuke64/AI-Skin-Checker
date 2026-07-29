@@ -421,7 +421,7 @@ def api_events():
 
     return jsonify(events)
 
-if __name__ == '__main__':
+app = Flask(__name__)
+
+with app.app_context():
     init_db()
-    debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
-    app.run(debug=debug_mode)

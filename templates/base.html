@@ -2,58 +2,149 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>{% block title %}肌トラブルアプリ{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SkinLog - AI肌ケアアナリティクス{% endblock %}</title>
+  
+  <!-- Bootstrap 5 & Google Fonts & Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary-color: #FF5A5F;
+      --primary-hover: #E0484D;
+      --bg-color: #F8F9FA;
+      --card-radius: 16px;
+    }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: var(--bg-color);
+      color: #333333;
+      padding-bottom: 70px; /* スマホ用ボトムナビのスペース確保 */
+    }
+
+    @media (min-width: 768px) {
+      body { padding-bottom: 0; }
+    }
+
+    /* メインヘッダー */
+    .navbar-custom {
+      background: linear-gradient(135deg, #FF5A5F 0%, #FF8E53 100%);
+      box-shadow: 0 4px 12px rgba(255, 90, 95, 0.15);
+    }
+
+    /* モダンなカードデザイン */
+    .card-custom {
+      border: none;
+      border-radius: var(--card-radius);
+      background: #FFFFFF;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* カスタムボタン */
+    .btn-primary-custom {
+      background: linear-gradient(135deg, #FF5A5F 0%, #FF7A00 100%);
+      border: none;
+      color: white;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(255, 90, 95, 0.25);
+    }
+    .btn-primary-custom:hover {
+      background: linear-gradient(135deg, #E0484D 0%, #E06B00 100%);
+      color: white;
+    }
+
+    /* スマホ用ボトムナビゲーション */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #FFFFFF;
+      border-top: 1px solid #EAEAEA;
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0;
+      z-index: 1030;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+    }
+
+    .bottom-nav .nav-item-mobile {
+      text-align: center;
+      color: #8E8E93;
+      text-decoration: none;
+      font-size: 0.75rem;
+    }
+
+    .bottom-nav .nav-item-mobile.active {
+      color: var(--primary-color);
+      font-weight: bold;
+    }
+
+    .bottom-nav .nav-item-mobile i {
+      font-size: 1.3rem;
+      display: block;
+    }
+  </style>
 </head>
 
 <body>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-danger">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="{{ url_for('index') }}">肌トラブルアプリ</a>
-    <div class="collapse navbar-collapse">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+  <!-- PC用トップナビゲーション -->
+  <nav class="navbar navbar-expand-md navbar-dark navbar-custom">
+    <div class="container">
+      <a class="navbar-brand fw-bold fs-4" href="{{ url_for('index') }}">
+        <i class="bi bi-stars me-2"></i>SkinLog
+      </a>
+      
+      <div class="collapse navbar-collapse d-none d-md-block">
         {% if session.username %}
-          <li class="nav-item">
-            <span class="nav-link text-white">こんにちは、{{ session.username }} さん</span>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('index') }}">ホーム</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('upload') }}">写真・生活習慣の記録</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('stats') }}">ニキビ数推移</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('calendar') }}">カレンダー</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('compare') }}">画像比較</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('analysis') }}">相関分析グラフ</a>
-          </li>
-        {% else %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('login') }}">ログイン</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('register') }}">登録</a>
-          </li>
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-3">
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">ホーム</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('upload') }}">撮影・記録</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('calendar') }}">カレンダー</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('stats') }}">推移グラフ</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('compare') }}">重畳比較</a></li>
+          </ul>
+          <div class="d-flex align-items-center gap-3 text-white">
+            <small>👤 {{ session.username }}</small>
+            <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light rounded-pill px-3">ログアウト</a>
+          </div>
         {% endif %}
-      </ul>
-      {% if session.username %}
-        <a href="{{ url_for('logout') }}" class="btn btn-outline-light">ログアウト</a>
-      {% endif %}
+      </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
-  <hr>
-  {% block content %}{% endblock %}
+  <!-- コンテンツエリア -->
+  <main class="py-4">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- スマホ用ボトムナビゲーション (画面サイズ小の時のみ表示) -->
+  {% if session.username %}
+  <div class="bottom-nav d-md-none">
+    <a href="{{ url_for('index') }}" class="nav-item-mobile {% if request.endpoint == 'index' %}active{% endif %}">
+      <i class="bi bi-house-door"></i>ホーム
+    </a>
+    <a href="{{ url_for('upload') }}" class="nav-item-mobile {% if request.endpoint == 'predict' or request.endpoint == 'upload' %}active{% endif %}">
+      <i class="bi bi-camera"></i>撮影
+    </a>
+    <a href="{{ url_for('calendar') }}" class="nav-item-mobile {% if request.endpoint == 'calendar' %}active{% endif %}">
+      <i class="bi bi-calendar-event"></i>カレンダー
+    </a>
+    <a href="{{ url_for('stats') }}" class="nav-item-mobile {% if request.endpoint == 'stats' %}active{% endif %}">
+      <i class="bi bi-graph-up"></i>推移
+    </a>
+    <a href="{{ url_for('compare') }}" class="nav-item-mobile {% if request.endpoint == 'compare' %}active{% endif %}">
+      <i class="bi bi-layers"></i>比較
+    </a>
+  </div>
+  {% endif %}
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-

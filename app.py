@@ -237,6 +237,7 @@ def logout():
 def index():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    return render_template('base.html', username=session['username'])
 
     user_id = session['user_id']
     db = get_db()

@@ -6,23 +6,17 @@ from werkzeug.utils import secure_filename
 from inference_sdk import InferenceHTTPClient
 from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
+import time, re
 
 load_dotenv()
 from google import genai
 from google.genai import types, errors
-import time, re
 
+# Flaskアプリの初期化（ここだけでOKです）
 app = Flask(__name__)
-gemini_client = genai.Client()
 
-# --- DB初期化をグローバルスコープ（または app.py の読み込み時）で実行 ---
-
-
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-gemini_client = genai.Client(
-    api_key=GEMINI_API_KEY
-)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "fallback-secret-key-for-dev")
 ROBOFLOW_API_KEY = os.environ.get("ROBOFLOW_API_KEY", "")
@@ -79,12 +73,14 @@ def init_db():
         );
         ''')
         db.commit()
+
+# Gunicorn起動時でもDBテーブルを初期化
 init_db()
 
 def generate_skincare_advice(acne_count, skincare, sleep, diet):
-    """
-    Gemini APIを使用して、ニキビ数と生活習慣に基づいたアドバイスを生成する
-    """
+    if not gemini_client:
+        return "Gemini APIキーが設定されていません。"
+
     prompt = f"""
     あなたは親切で専門的な皮膚科のスキンケアアドバイザーです。
     以下のユーザーの今日の記録をもとに、短く丁寧で実践的なスキンケアアドバイス（200文字程度）を作成してください。
@@ -103,6 +99,7 @@ def generate_skincare_advice(acne_count, skincare, sleep, diet):
 
     for attempt in range(max_retries):
         try:
+            # モデル名を正しいもの（gemini-2.0-flash-lite 等）に指定
             response = gemini_client.models.generate_content(
                 model='models/gemini-3.1-flash-lite',
                 contents=prompt,
@@ -111,11 +108,10 @@ def generate_skincare_advice(acne_count, skincare, sleep, diet):
 
         except errors.APIError as e:
             if e.code == 429:
-                # エラーメッセージから待機秒数を抽出（見つからなければデフォルトで15秒→25秒）
                 wait_time = 15 if attempt == 0 else 25
                 match = re.search(r"Please retry in (\d+(\.\d+)?)s", str(e))
                 if match:
-                    wait_time = float(match.group(1)) + 1.0  # 安全のため1秒余分に待つ
+                    wait_time = float(match.group(1)) + 1.0
 
                 if attempt < max_retries - 1:
                     app.logger.warning(
@@ -132,6 +128,7 @@ def generate_skincare_advice(acne_count, skincare, sleep, diet):
             break
 
     return "現在AIアドバイスを生成できません。時間を置いて再度お試しください。"
+
 inference_client = InferenceHTTPClient(
     api_url="https://serverless.roboflow.com",
     api_key=ROBOFLOW_API_KEY
@@ -237,7 +234,6 @@ def logout():
 def index():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    return render_template('base.html', username=session['username'])
 
     user_id = session['user_id']
     db = get_db()
@@ -254,6 +250,7 @@ def index():
 
     return render_template(
         'index.html',
+        username=session['username'],
         skincare_data=fetch_avg('skincare'),
         sleep_data=fetch_avg('sleep'),
         diet_data=fetch_avg('diet')
@@ -313,7 +310,7 @@ def predict():
     # Gemini API でアドバイス生成
     advice = generate_skincare_advice(acne_count, skincare, sleep, diet)
 
-    # DBに保存 (advice カラムを追加)
+    # DBに保存
     db = get_db()
     cursor = db.cursor()
     cursor.execute(
@@ -328,7 +325,6 @@ def predict():
 
     return redirect(url_for('result_detail', record_id=record_id))
 
-# --- 解析結果・詳細表示ページ ---
 @app.route('/result/<int:record_id>')
 def result_detail(record_id):
     if 'user_id' not in session:
@@ -387,14 +383,12 @@ def stats():
 
     return render_template('stats.html', dates=dates, counts=counts, records=records)
 
-# --- カレンダーページ ---
 @app.route('/calendar')
 def calendar():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     return render_template('calendar.html')
 
-# --- カレンダー用イベントデータ取得API ---
 @app.route('/api/events')
 def api_events():
     if 'user_id' not in session:
@@ -427,7 +421,6 @@ def api_events():
 
     return jsonify(events)
 
-app = Flask(__name__)
-
-with app.app_context():
-    init_db()
+if __name__ == '__main__':
+    debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
+    app.run(debug=debug_mode)

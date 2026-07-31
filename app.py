@@ -389,6 +389,41 @@ def calendar():
         return redirect(url_for('login'))
     return render_template('calendar.html')
 
+# --- 画像比較ページ ---
+@app.route('/compare')
+def compare():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    db = get_db()
+    
+    # 選択用のレコード一覧を取得
+    records = db.execute(
+        "SELECT id, date, count, result_image_path, image_path FROM acne_records WHERE user_id=? ORDER BY date DESC",
+        (user_id,)
+    ).fetchall()
+
+    # URLパラメータから 2つの ID を取得 (?id1=1&id2=2)
+    id1 = request.args.get('id1', type=int)
+    id2 = request.args.get('id2', type=int)
+
+    record1 = None
+    record2 = None
+
+    if id1 and id2:
+        record1 = db.execute("SELECT * FROM acne_records WHERE id=? AND user_id=?", (id1, user_id)).fetchone()
+        record2 = db.execute("SELECT * FROM acne_records WHERE id=? AND user_id=?", (id2, user_id)).fetchone()
+
+    return render_template(
+        'compare.html',
+        records=records,
+        record1=record1,
+        record2=record2,
+        id1=id1,
+        id2=id2
+    )
+
 @app.route('/api/events')
 def api_events():
     if 'user_id' not in session:

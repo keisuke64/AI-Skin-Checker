@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}画像比較ビュー{% endblock %}
+
+{% block content %}
+<div class="container my-4" style="max-width: 850px;">
+  <h2 class="mb-4 text-center">2つの画像を重ねて比較</h2>
+
+  <!-- 画像選択フォーム -->
+  <form method="GET" action="{{ url_for('compare') }}" class="card p-3 shadow-sm mb-4">
+    <div class="row g-3 align-items-center">
+      <div class="col-md-5">
+        <label class="form-label fw-bold">比較元 (Before / 過去)</label>
+        <select name="id1" class="form-select" required>
+          <option value="">選択してください</option>
+          {% for r in records %}
+            <option value="{{ r.id }}" {% if id1 == r.id %}selected{% endif %}>
+              {{ r.date }} (ニキビ: {{ r.count }}個)
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-5">
+        <label class="form-label fw-bold">比較対象 (After / 最新)</label>
+        <select name="id2" class="form-select" required>
+          <option value="">選択してください</option>
+          {% for r in records %}
+            <option value="{{ r.id }}" {% if id2 == r.id %}selected{% endif %}>
+              {{ r.date }} (ニキビ: {{ r.count }}個)
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-danger w-100">比較する</button>
+      </div>
+    </div>
+  </form>
+
+  {% if record1 and record2 %}
+    <div class="card p-4 shadow-sm text-center">
+      <!-- スライダーコントローラー -->
+      <div class="mb-3">
+        <label for="opacityRange" class="form-label fw-bold">重ね合わせ透過度の調整 (After画像の透明度)</label>
+        <div class="d-flex align-items-center justify-content-center gap-3">
+          <span class="small text-muted">Before ({{ record1.date }})</span>
+          <input type="range" class="form-range" id="opacityRange" min="0" max="1" step="0.01" value="0.5" style="max-width: 400px;" oninput="updateOpacity(this.value)">
+          <span class="small text-muted">After ({{ record2.date }})</span>
+        </div>
+      </div>
+
+      <!-- 画像重畳表示エリア -->
+      <div class="position-relative d-inline-block mx-auto rounded overflow-hidden border shadow-sm" style="max-width: 100%; width: 500px; min-height: 350px;">
+        <!-- 下層: Before 画像 -->
+        <img src="{{ url_for('static', filename=record1.result_image_path.replace('static/', '')) if record1.result_image_path else url_for('static', filename=record1.image_path.replace('static/', '')) }}" 
+             class="img-fluid w-100 d-block" alt="Before">
+
+        <!-- 上層: After 画像 (透過度コントロール対象) -->
+        <img id="overlayImage" 
+             src="{{ url_for('static', filename=record2.result_image_path.replace('static/', '')) if record2.result_image_path else url_for('static', filename=record2.image_path.replace('static/', '')) }}" 
+             class="img-fluid w-100 position-absolute top-0 start-0" style="opacity: 0.5;" alt="After">
+      </div>
+
+      <div class="row mt-4 text-start bg-light p-3 rounded mx-1">
+        <div class="col-6 border-end">
+          <h6 class="fw-bold text-danger">Before ({{ record1.date }})</h6>
+          <p class="mb-1">ニキビ数: <strong>{{ record1.count }}</strong> 個</p>
+          <p class="mb-0 small text-muted">スキンケア: {{ record1.skincare }} / 睡眠: {{ record1.sleep }}</p>
+        </div>
+        <div class="col-6">
+          <h6 class="fw-bold text-primary">After ({{ record2.date }})</h6>
+          <p class="mb-1">ニキビ数: <strong>{{ record2.count }}</strong> 個</p>
+          <p class="mb-0 small text-muted">スキンケア: {{ record2.skincare }} / 睡眠: {{ record2.sleep }}</p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function updateOpacity(val) {
+        document.getElementById('overlayImage').style.opacity = val;
+      }
+    </script>
+  {% endif %}
+</div>
+{% endblock %}

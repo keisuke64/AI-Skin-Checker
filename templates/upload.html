@@ -1,70 +1,178 @@
 {% extends "base.html" %}
-{% block title %}写真と生活習慣の記録{% endblock %}
+{% block title %}写真撮影・アップロード{% endblock %}
 
 {% block content %}
-<div class="container my-4" style="max-width: 600px;">
-  <h2 class="mb-4 text-center">写真と生活習慣の記録</h2>
+<div class="container my-4" style="max-width: 650px;">
+  <h2 class="mb-4 text-center">肌の撮影・記録</h2>
 
   {% if error %}
     <div class="alert alert-danger" role="alert">{{ error }}</div>
   {% endif %}
 
-  <form method="POST" action="{{ url_for('predict') }}" enctype="multipart/form-data" class="card p-4 shadow-sm">
-    <div class="mb-3">
-      <label for="file" class="form-label fw-bold">ニキビ写真を選択</label>
-      <input type="file" name="file" id="file" class="form-control" accept="image/*" required onchange="previewImage(event)">
-      <div class="mt-3 text-center">
-        <img id="imgPreview" src="#" alt="プレビュー" style="max-width: 100%; max-height: 200px; display: none; border-radius: 8px;">
+  <div class="card p-4 shadow-sm">
+    <!-- モード切り替えタブ -->
+    <ul class="nav nav-pills nav-justified mb-3" id="uploadTab" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active" id="camera-tab" data-bs-toggle="pill" data-bs-target="#camera-panel" type="button" onclick="startCamera()">📷 カメラで撮影</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="file-tab" data-bs-toggle="pill" data-bs-target="#file-panel" type="button" onclick="stopCamera()">📁 ファイルを選択</button>
+      </li>
+    </ul>
+
+    <form method="POST" action="{{ url_for('predict') }}" enctype="multipart/form-data" id="uploadForm">
+      
+      <!-- タブコンテンツ -->
+      <div class="tab-content mb-3">
+        <!-- 📷 カメラ撮影パネル -->
+        <div class="tab-pane fade show active text-center" id="camera-panel">
+          <div class="position-relative d-inline-block bg-dark rounded overflow-hidden mb-3" style="width: 100%; max-width: 480px; height: 360px;">
+            <video id="webcam" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+            <canvas id="canvas" style="display: none;"></canvas>
+            <img id="captured-preview" src="#" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+          </div>
+          <div>
+            <button type="button" class="btn btn-outline-danger me-2" id="btn-capture" onclick="takeSnapshot()">📸 シャッターを押す</button>
+            <button type="button" class="btn btn-outline-secondary" id="btn-retake" style="display: none;" onclick="retakePhoto()">🔄 撮り直す</button>
+          </div>
+        </div>
+
+        <!-- 📁 ファイル選択パネル -->
+        <div class="tab-pane fade" id="file-panel">
+          <label for="file" class="form-label">画像ファイルを選択</label>
+          <input type="file" name="file" id="file" class="form-control" accept="image/*" onchange="previewFile(event)">
+          <div class="mt-3 text-center">
+            <img id="file-preview" src="#" style="max-width: 100%; max-height: 250px; display: none;" class="rounded border">
+          </div>
+        </div>
       </div>
-    </div>
 
-    <hr>
-    <h5 class="mb-3 fw-bold">今日の生活習慣</h5>
+      <!-- 送信用の隠しファイルInput（カメラ撮影時用） -->
+      <input type="file" name="file" id="blob-file-input" style="display: none;">
 
-    <div class="mb-3">
-      <label for="skincare" class="form-label">スキンケア</label>
-      <select name="skincare" class="form-select" required>
-        <option value="">選択してください</option>
-        <option value="念入り">念入り</option>
-        <option value="普通">普通</option>
-        <option value="簡単">簡単</option>
-        <option value="なし">なし</option>
-      </select>
-    </div>
+      <hr>
+      <h5 class="mb-3 fw-bold">今日の生活習慣</h5>
 
-    <div class="mb-3">
-      <label for="sleep" class="form-label">睡眠時間</label>
-      <select name="sleep" class="form-select" required>
-        <option value="">選択してください</option>
-        <option value="8時間以上">8時間以上</option>
-        <option value="6-8時間">6-8時間</option>
-        <option value="6時間未満">6時間未満</option>
-      </select>
-    </div>
+      <div class="mb-3">
+        <label for="skincare" class="form-label">スキンケア</label>
+        <select name="skincare" class="form-select" required>
+          <option value="">選択してください</option>
+          <option value="念入り">念入り</option>
+          <option value="普通">普通</option>
+          <option value="簡単">簡単</option>
+          <option value="なし">なし</option>
+        </select>
+      </div>
 
-    <div class="mb-3">
-      <label for="diet" class="form-label">食生活</label>
-      <select name="diet" class="form-select" required>
-        <option value="">選択してください</option>
-        <option value="野菜中心">野菜中心</option>
-        <option value="バランス良">バランス良</option>
-        <option value="脂質多め">脂質多め</option>
-      </select>
-    </div>
+      <div class="mb-3">
+        <label for="sleep" class="form-label">睡眠時間</label>
+        <select name="sleep" class="form-select" required>
+          <option value="">選択してください</option>
+          <option value="8時間以上">8時間以上</option>
+          <option value="6-8時間">6-8時間</option>
+          <option value="6時間未満">6時間未満</option>
+        </select>
+      </div>
 
-    <button type="submit" class="btn btn-danger w-100 mt-2">解析して記録する</button>
-  </form>
+      <div class="mb-3">
+        <label for="diet" class="form-label">食生活</label>
+        <select name="diet" class="form-select" required>
+          <option value="">選択してください</option>
+          <option value="野菜中心">野菜中心</option>
+          <option value="バランス良">バランス良</option>
+          <option value="脂質多め">脂質多め</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-danger w-100 mt-2" id="submit-btn">解析して記録する</button>
+    </form>
+  </div>
 </div>
 
 <script>
-  function previewImage(event) {
-    const reader = new FileReader();
-    reader.onload = function(){
-      const output = document.getElementById('imgPreview');
-      output.src = reader.result;
-      output.style.display = 'block';
-    };
-    reader.readAsDataURL(event.target[files][0]);
+let stream = null;
+let capturedBlob = null;
+
+// 画面読み込み時にカメラ起動
+document.addEventListener('DOMContentLoaded', () => {
+  startCamera();
+});
+
+// カメラ起動
+async function startCamera() {
+  const video = document.getElementById('webcam');
+  try {
+    // スマホ対応：外カメラ優先 (facingMode: "user" にするとインカメラ)
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    video.srcObject = stream;
+  } catch (err) {
+    console.error("カメラのアクセスに失敗しました:", err);
+    alert("カメラを起動できませんでした。ファイル選択をご利用ください。");
   }
+}
+
+// カメラ停止
+function stopCamera() {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
+}
+
+// 撮影（スナップショット作成）
+function takeSnapshot() {
+  const video = document.getElementById('webcam');
+  const canvas = document.getElementById('canvas');
+  const preview = document.getElementById('captured-preview');
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  // Canvas を Blob に変換
+  canvas.toBlob((blob) => {
+    capturedBlob = blob;
+    
+    // FileListオブジェクトを模倣してフォームに設定
+    const file = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
+    const container = new DataTransfer();
+    container.items.add(file);
+    document.getElementById('file').files = container.files;
+
+    // プレビュー表示切り替え
+    preview.src = URL.createObjectURL(blob);
+    preview.style.display = 'block';
+    video.style.display = 'none';
+
+    document.getElementById('btn-capture').style.display = 'none';
+    document.getElementById('btn-retake').style.display = 'inline-block';
+  }, 'image/jpeg', 0.95);
+}
+
+// 撮り直し
+function retakePhoto() {
+  document.getElementById('captured-preview').style.display = 'none';
+  document.getElementById('webcam').style.display = 'block';
+  document.getElementById('btn-capture').style.display = 'inline-block';
+  document.getElementById('btn-retake').style.display = 'none';
+  document.getElementById('file').value = '';
+}
+
+// ファイル選択時のプレビュー
+function previewFile(event) {
+  const reader = new FileReader();
+  reader.onload = function(){
+    const output = document.getElementById('file-preview');
+    output.src = reader.result;
+    output.style.display = 'block';
+  };
+  if(event.target.files[0]){
+    reader.readAsDataURL(event.target.files[0]);
+  }
+}
 </script>
 {% endblock %}

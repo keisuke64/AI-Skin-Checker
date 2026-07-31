@@ -12,14 +12,13 @@ load_dotenv()
 from google import genai
 from google.genai import types, errors
 
-# Flaskアプリの初期化（ここだけでOKです）
+# Flaskアプリの初期化
 app = Flask(__name__)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "fallback-secret-key-for-dev")
-ROBOFLOW_API_KEY = os.environ.get("ROBOFLOW_API_KEY", "")
 ROBOFLOW_WORKSPACE = "baum-test"
 ROBOFLOW_WORKFLOW_ID = "acne-vacne-tvbr3-1-rfdetr-seg-2xlarge-t1-logic"
 
@@ -99,7 +98,7 @@ def generate_skincare_advice(acne_count, skincare, sleep, diet):
 
     for attempt in range(max_retries):
         try:
-            # モデル名を正しいもの（gemini-2.0-flash-lite 等）に指定
+            # 正しいモデル名を指定
             response = gemini_client.models.generate_content(
                 model='models/gemini-3.1-flash-lite',
                 contents=prompt,
@@ -129,10 +128,13 @@ def generate_skincare_advice(acne_count, skincare, sleep, diet):
 
     return "現在AIアドバイスを生成できません。時間を置いて再度お試しください。"
 
-inference_client = InferenceHTTPClient(
-    api_url="https://serverless.roboflow.com",
-    api_key=ROBOFLOW_API_KEY
-)
+# 実行時に環境変数を動的取得するクライアント生成関数
+def get_inference_client():
+    api_key = os.environ.get("ROBOFLOW_API_KEY", "")
+    return InferenceHTTPClient(
+        api_url="https://serverless.roboflow.com",
+        api_key=api_key
+    )
 
 def get_predictions_list(result):
     preds = []
@@ -287,6 +289,7 @@ def predict():
 
     # Roboflow推論
     try:
+        inference_client = get_inference_client()
         result = inference_client.run_workflow(
             workspace_name=ROBOFLOW_WORKSPACE,
             workflow_id=ROBOFLOW_WORKFLOW_ID,
@@ -388,41 +391,6 @@ def calendar():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     return render_template('calendar.html')
-
-# --- 画像比較ページ ---
-@app.route('/compare')
-def compare():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-
-    user_id = session['user_id']
-    db = get_db()
-    
-    # 選択用のレコード一覧を取得
-    records = db.execute(
-        "SELECT id, date, count, result_image_path, image_path FROM acne_records WHERE user_id=? ORDER BY date DESC",
-        (user_id,)
-    ).fetchall()
-
-    # URLパラメータから 2つの ID を取得 (?id1=1&id2=2)
-    id1 = request.args.get('id1', type=int)
-    id2 = request.args.get('id2', type=int)
-
-    record1 = None
-    record2 = None
-
-    if id1 and id2:
-        record1 = db.execute("SELECT * FROM acne_records WHERE id=? AND user_id=?", (id1, user_id)).fetchone()
-        record2 = db.execute("SELECT * FROM acne_records WHERE id=? AND user_id=?", (id2, user_id)).fetchone()
-
-    return render_template(
-        'compare.html',
-        records=records,
-        record1=record1,
-        record2=record2,
-        id1=id1,
-        id2=id2
-    )
 
 @app.route('/api/events')
 def api_events():
